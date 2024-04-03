@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoList.DTOs;
@@ -10,16 +11,22 @@ namespace TodoList.Controllers
     public class TodoController : ControllerBase
     {
         private readonly StoreContext _context;
+        private readonly IValidator<TodoInsertDto> _todoInsertValidator;
+        private readonly IValidator<TodoUpdateDto> _todoUpdateValidator;
 
-        public TodoController(StoreContext context)
+        public TodoController(StoreContext context,
+            IValidator<TodoInsertDto> todoInsertValidator,
+            IValidator<TodoUpdateDto> todoUpdateValidator)
         {
             _context = context;
+            _todoInsertValidator = todoInsertValidator;
+            _todoUpdateValidator = todoUpdateValidator;
         }
 
         [HttpGet]
         public async Task<IEnumerable<TodoDto>> Get()
         {
-            return await _context.ToDos.Select(t => new TodoDto()
+            return await _context.ToDos!.Select(t => new TodoDto()
             {
                 TodoId = t.TodoId,
                 ToDoName = t.ToDoName,
@@ -31,7 +38,7 @@ namespace TodoList.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TodoDto>> GetById(int id)
         {
-            var todo = await _context.ToDos.FindAsync(id);
+            var todo = await _context.ToDos!.FindAsync(id);
             if (todo == null)
             {
                 return NotFound();
@@ -51,6 +58,12 @@ namespace TodoList.Controllers
         [HttpPost]
         public async Task<ActionResult<TodoDto>> Add(TodoInsertDto todoInsertDto)
         {
+            var validationResult = await _todoInsertValidator.ValidateAsync(todoInsertDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+            
             var todo = new ToDo()
             {
                 ToDoName = todoInsertDto.ToDoName,
@@ -58,7 +71,7 @@ namespace TodoList.Controllers
                 UserId = todoInsertDto.UserId
             };
 
-            await _context.ToDos.AddAsync(todo);
+            await _context.ToDos!.AddAsync(todo);
             await _context.SaveChangesAsync();
 
             var todoDto = new TodoDto()
@@ -75,7 +88,13 @@ namespace TodoList.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<TodoDto>> Update(int id, TodoUpdateDto todoUpdateDto)
         {
-            var todo = await _context.ToDos.FindAsync(id);
+            var validationResult = await _todoUpdateValidator.ValidateAsync(todoUpdateDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+            
+            var todo = await _context.ToDos!.FindAsync(id);
             if (todo == null)
             {
                 return NotFound();
@@ -100,7 +119,7 @@ namespace TodoList.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
-            var todo = await _context.ToDos.FindAsync(id);
+            var todo = await _context.ToDos!.FindAsync(id);
 
             if (todo == null)
             {
