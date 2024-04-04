@@ -1,8 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TodoList.DTOs;
-using TodoList.Models;
+using TodoList.Services;
 
 namespace TodoList.Controllers
 {
@@ -10,49 +9,31 @@ namespace TodoList.Controllers
     [ApiController]
     public class TodoController : ControllerBase
     {
-        private readonly StoreContext _context;
         private readonly IValidator<TodoInsertDto> _todoInsertValidator;
         private readonly IValidator<TodoUpdateDto> _todoUpdateValidator;
+        private readonly ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto> _todoService;
 
-        public TodoController(StoreContext context,
-            IValidator<TodoInsertDto> todoInsertValidator,
-            IValidator<TodoUpdateDto> todoUpdateValidator)
+        public TodoController(IValidator<TodoInsertDto> todoInsertValidator,
+            IValidator<TodoUpdateDto> todoUpdateValidator,
+           [FromKeyedServices("todoService")]ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto> todoService)
         {
-            _context = context;
             _todoInsertValidator = todoInsertValidator;
             _todoUpdateValidator = todoUpdateValidator;
+            _todoService = todoService;
         }
 
         [HttpGet]
         public async Task<IEnumerable<TodoDto>> Get()
         {
-            return await _context.ToDos!.Select(t => new TodoDto()
-            {
-                TodoId = t.TodoId,
-                ToDoName = t.ToDoName,
-                IsDone = t.IsDone,
-                UserId = t.UserId
-            }).ToListAsync();
+            return await _todoService.Get();
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TodoDto>> GetById(int id)
         {
-            var todo = await _context.ToDos!.FindAsync(id);
-            if (todo == null)
-            {
-                return NotFound();
-            }
-
-            var todoDto = new TodoDto()
-            {
-                TodoId = todo.TodoId,
-                ToDoName = todo.ToDoName,
-                IsDone = todo.IsDone,
-                UserId = todo.UserId
-            };
-
-            return Ok(todoDto);
+            var todoDto = await _todoService.GetById(id);
+            
+            return todoDto == null ? NotFound() : Ok(todoDto);
         }
 
         [HttpPost]
@@ -63,26 +44,10 @@ namespace TodoList.Controllers
             {
                 return BadRequest(validationResult.Errors);
             }
+
+            var todoDto = await _todoService.Add(todoInsertDto);
             
-            var todo = new ToDo()
-            {
-                ToDoName = todoInsertDto.ToDoName,
-                IsDone = todoInsertDto.IsDone,
-                UserId = todoInsertDto.UserId
-            };
-
-            await _context.ToDos!.AddAsync(todo);
-            await _context.SaveChangesAsync();
-
-            var todoDto = new TodoDto()
-            {
-                TodoId = todo.TodoId,
-                ToDoName = todo.ToDoName,
-                IsDone = todo.IsDone,
-                UserId = todo.UserId
-            };
-
-            return CreatedAtAction(nameof(GetById), new { id = todo.TodoId }, todoDto);
+            return CreatedAtAction(nameof(GetById), new { id = todoDto.TodoId }, todoDto);
         }
 
         [HttpPut("{id}")]
@@ -93,43 +58,18 @@ namespace TodoList.Controllers
             {
                 return BadRequest(validationResult.Errors);
             }
+
+            var todoDto = await _todoService.Update(id, todoUpdateDto); 
             
-            var todo = await _context.ToDos!.FindAsync(id);
-            if (todo == null)
-            {
-                return NotFound();
-            }
-
-            todo.ToDoName = todoUpdateDto.ToDoName;
-            todo.IsDone = todoUpdateDto.IsDone;
-            todo.UserId = todoUpdateDto.UserId;
-            await _context.SaveChangesAsync();
-
-            var todoDto = new TodoDto()
-            {
-                TodoId = todo.TodoId,
-                ToDoName = todo.ToDoName,
-                IsDone = todo.IsDone,
-                UserId = todo.UserId    
-            };
-
             return Ok(todoDto);
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<ActionResult<TodoDto>> Delete(int id)
         {
-            var todo = await _context.ToDos!.FindAsync(id);
+            var todoDto = await _todoService.Delete(id);
 
-            if (todo == null)
-            {
-                return NotFound();
-            }
-
-            _context.ToDos.Remove(todo);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(todoDto);
         }
     }
 }
