@@ -1,36 +1,46 @@
+using Microsoft.EntityFrameworkCore;
 using TodoList.Models;
 
 namespace TodoList.Repository;
 
-public class TodoRespository : IRepository<ToDo>
+public class TodoRepository : IRepository<ToDo>
 {
+    private readonly StoreContext _context;
+
+    public TodoRepository(StoreContext context)
+    {
+        _context = context;
+    }
+    
     public async Task<IEnumerable<ToDo>> Get()
     {
-        throw new NotImplementedException();
+        return await _context.ToDos!.ToListAsync();
     }
 
-    public Task<IEnumerable<ToDo>> GetById(int id)
+    public async Task<ToDo> GetById(int id)
     {
-        throw new NotImplementedException();
+        var result =await _context.ToDos!.FindAsync(id);
+        return result ?? new ToDo();
     }
 
-    public Task Add(ToDo entity)
+    public async Task Add(ToDo todo)
     {
-        throw new NotImplementedException();
+         await _context.ToDos!.AddAsync(todo);
     }
 
-    public void Update(ToDo entity)
+    public void Update(ToDo todo)
     {
-        throw new NotImplementedException();
+        _context.ToDos!.Attach(todo);
+        _context.ToDos!.Entry(todo).State = EntityState.Modified;
     }
 
-    public void Delete(ToDo entity)
+    public void Delete(ToDo todo)
     {
-        throw new NotImplementedException();
+        _context.ToDos!.Remove(todo);
     }
 
-    public Task Save()
+    public async Task Save()
     {
-        throw new NotImplementedException();
+        await _context.SaveChangesAsync();
     }
 }

@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using TodoList.DTOs;
 using TodoList.Models;
+using TodoList.Repository;
 using TodoList.Services;
 using TodoList.Validators;
 
@@ -13,6 +14,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddKeyedScoped<ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>, TodoService>("todoService"); 
+
+// Repositoryu
+builder.Services.AddScoped<IRepository<ToDo>, TodoRepository>();
 
 // Entity Framework
 builder.Services.AddDbContext<StoreContext>(options =>

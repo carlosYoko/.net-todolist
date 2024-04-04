@@ -1,31 +1,34 @@
 using Microsoft.EntityFrameworkCore;
 using TodoList.DTOs;
 using TodoList.Models;
+using TodoList.Repository;
 
 namespace TodoList.Services;
 
 public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
 {
-    private readonly StoreContext _context;
-    public TodoService(StoreContext context)
+    private readonly IRepository<ToDo> _todoRepository;
+    public TodoService(IRepository<ToDo> todoRepository)
     {
-        _context = context;
+        _todoRepository = todoRepository;
     }
     
     public async Task<IEnumerable<TodoDto>> Get()
     {
-        return await _context.ToDos!.Select(t => new TodoDto()
+        var todos = await _todoRepository.Get();
+
+        return todos.Select(t => new TodoDto()
         {
             TodoId = t.TodoId,
             ToDoName = t.ToDoName,
             IsDone = t.IsDone,
             UserId = t.UserId
-        }).ToListAsync();
+        });
     }
 
     public async Task<TodoDto> GetById(int id)
     {
-        var todo = await _context.ToDos!.FindAsync(id);
+        var todo = await _todoRepository.GetById(id);
         
         if (todo != null)
         {
@@ -51,8 +54,8 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
             UserId = todoInsertDto.UserId
         };
 
-        await _context.ToDos!.AddAsync(todo);
-        await _context.SaveChangesAsync();
+        await _todoRepository.Add(todo);
+        await _todoRepository.Save();
 
         var todoDto = new TodoDto()
         {
@@ -66,14 +69,15 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
     }
     public async Task<TodoDto> Update(int id, TodoUpdateDto todoUpdateDto)
     {
-        var todo = await _context.ToDos!.FindAsync(id);
+        var todo = await _todoRepository.GetById(id);
         if (todo != null)
         { 
             todo.ToDoName = todoUpdateDto.ToDoName;
             todo.IsDone = todoUpdateDto.IsDone;
             todo.UserId = todoUpdateDto.UserId;
-            
-            await _context.SaveChangesAsync();
+
+             _todoRepository.Update(todo);
+             await _todoRepository.Save();
 
         var todoDto = new TodoDto()
         {
@@ -90,12 +94,12 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
 
     public async Task<TodoDto> Delete(int id)
     {
-        var todo = await _context.ToDos!.FindAsync(id);
+        var todo = await _todoRepository.GetById(id);
 
         if (todo != null)
         {
-            _context.ToDos.Remove(todo);
-            await _context.SaveChangesAsync();
+            _todoRepository.Delete(todo);
+            await _todoRepository.Save();
 
         var todoDto = new TodoDto()
         {
