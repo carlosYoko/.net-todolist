@@ -43,4 +43,9 @@ public class TodoRepository : IRepository<ToDo>
     {
         await _context.SaveChangesAsync();
     }
+
+    public IEnumerable<ToDo> Search(Func<ToDo, bool> filter)
+    {
+        return _context.ToDos!.Where(filter).ToList();
+    }
 }

@@ -9,10 +9,12 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
 {
     private readonly IRepository<ToDo> _todoRepository;
     private readonly IMapper _mapper;
+    public List<string> Errors { get;}
     public TodoService(IRepository<ToDo> todoRepository, IMapper mapper)
     {
         _todoRepository = todoRepository;
         _mapper = mapper;
+        Errors = new List<string>();
     }
     
     public async Task<IEnumerable<TodoDto>> Get()
@@ -81,4 +83,26 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
         
         return null;
     }
+
+    public bool Validate(TodoInsertDto todoInsertDto)
+    {
+        if (_todoRepository.Search(b => b.ToDoName == todoInsertDto.ToDoName).Any())
+        {
+            Errors.Add("Ya existe una tarea con este nombre");
+            return false;
+        }
+        return true;
+    }
+    
+    public bool Validate(TodoUpdateDto todoUpdateDto)
+    {
+        if (_todoRepository.Search(b => b.ToDoName == todoUpdateDto.ToDoName
+            && b.TodoId != todoUpdateDto.TodoId).Any())
+        {
+            Errors.Add("Ya existe una tarea con este nombre");
+            return false;
+        }
+        return true;
+    }
+    
 }

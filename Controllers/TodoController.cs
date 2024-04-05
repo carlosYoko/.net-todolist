@@ -45,6 +45,11 @@ namespace TodoList.Controllers
                 return BadRequest(validationResult.Errors);
             }
 
+            if (!_todoService.Validate(todoInsertDto))
+            {
+                return BadRequest(_todoService.Errors);
+            }
+            
             var todoDto = await _todoService.Add(todoInsertDto);
             
             return CreatedAtAction(nameof(GetById), new { id = todoDto.TodoId }, todoDto);
@@ -59,6 +64,11 @@ namespace TodoList.Controllers
                 return BadRequest(validationResult.Errors);
             }
 
+            if (!_todoService.Validate(todoUpdateDto))
+            {
+                return BadRequest(_todoService.Errors);
+            }
+            
             var todoDto = await _todoService.Update(id, todoUpdateDto); 
             
             return Ok(todoDto);
