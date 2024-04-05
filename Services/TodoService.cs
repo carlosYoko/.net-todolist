@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 using TodoList.DTOs;
 using TodoList.Models;
 using TodoList.Repository;
@@ -8,22 +8,18 @@ namespace TodoList.Services;
 public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
 {
     private readonly IRepository<ToDo> _todoRepository;
-    public TodoService(IRepository<ToDo> todoRepository)
+    private readonly IMapper _mapper;
+    public TodoService(IRepository<ToDo> todoRepository, IMapper mapper)
     {
         _todoRepository = todoRepository;
+        _mapper = mapper;
     }
     
     public async Task<IEnumerable<TodoDto>> Get()
     {
         var todos = await _todoRepository.Get();
 
-        return todos.Select(t => new TodoDto()
-        {
-            TodoId = t.TodoId,
-            ToDoName = t.ToDoName,
-            IsDone = t.IsDone,
-            UserId = t.UserId
-        });
+        return todos.Select(t => _mapper.Map<TodoDto>(t));
     }
 
     public async Task<TodoDto> GetById(int id)
@@ -32,13 +28,8 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
         
         if (todo != null)
         {
-         var todoDto = new TodoDto()
-            {
-            TodoId = todo.TodoId,
-            ToDoName = todo.ToDoName,
-            IsDone = todo.IsDone,
-            UserId = todo.UserId
-             };
+            var todoDto = _mapper.Map<TodoDto>(todo);
+            
         return todoDto;
         }
         
@@ -47,23 +38,12 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
 
     public async Task<TodoDto> Add(TodoInsertDto todoInsertDto)
     {
-        var todo = new ToDo()
-        {
-            ToDoName = todoInsertDto.ToDoName,
-            IsDone = todoInsertDto.IsDone,
-            UserId = todoInsertDto.UserId
-        };
+        var todo = _mapper.Map<ToDo>(todoInsertDto);
 
         await _todoRepository.Add(todo);
         await _todoRepository.Save();
 
-        var todoDto = new TodoDto()
-        {
-            TodoId = todo.TodoId,
-            ToDoName = todo.ToDoName,
-            IsDone = todo.IsDone,
-            UserId = todo.UserId
-        };
+        var todoDto = _mapper.Map<TodoDto>(todo);
 
         return todoDto;
     }
@@ -71,21 +51,14 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
     {
         var todo = await _todoRepository.GetById(id);
         if (todo != null)
-        { 
-            todo.ToDoName = todoUpdateDto.ToDoName;
-            todo.IsDone = todoUpdateDto.IsDone;
-            todo.UserId = todoUpdateDto.UserId;
+        {
+            todo = _mapper.Map<TodoUpdateDto, ToDo>(todoUpdateDto, todo);
 
              _todoRepository.Update(todo);
              await _todoRepository.Save();
 
-        var todoDto = new TodoDto()
-        {
-            TodoId = todo.TodoId,
-            ToDoName = todo.ToDoName,
-            IsDone = todo.IsDone,
-            UserId = todo.UserId    
-        };
+             var todoDto = _mapper.Map<TodoDto>(todo);
+             
         return todoDto;
         }
 
@@ -101,13 +74,7 @@ public class TodoService : ICommonService<TodoDto, TodoInsertDto, TodoUpdateDto>
             _todoRepository.Delete(todo);
             await _todoRepository.Save();
 
-        var todoDto = new TodoDto()
-        {
-            TodoId = todo.TodoId,
-            ToDoName = todo.ToDoName,
-            IsDone = todo.IsDone,
-            UserId = todo.UserId    
-        };
+            var todoDto = _mapper.Map<TodoDto>(todo);
         
         return todoDto;
         }

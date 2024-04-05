@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using TodoList.Automappers;
 using TodoList.DTOs;
 using TodoList.Models;
 using TodoList.Repository;
@@ -27,6 +28,9 @@ builder.Services.AddDbContext<StoreContext>(options =>
 // Validators
 builder.Services.AddScoped<IValidator<TodoInsertDto>, TodoInsertValidator>();
 builder.Services.AddScoped<IValidator<TodoUpdateDto>, TodoUpdateValidator>();
+
+// Mappers
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 var app = builder.Build();
 
